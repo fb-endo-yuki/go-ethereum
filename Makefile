@@ -7,6 +7,9 @@
 GOBIN = ./build/bin
 GO ?= latest
 GORUN = env GO111MODULE=on go run
+ifeq ($(shell uname -s),Darwin)
+GORUN = env GO111MODULE=on go run -ldflags=-linkmode=external
+endif
 
 geth:
 	$(GORUN) build/ci.go install ./cmd/geth

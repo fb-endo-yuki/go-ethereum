@@ -158,6 +158,8 @@ var (
 
 var GOBIN, _ = filepath.Abs(filepath.Join("build", "bin"))
 
+const mobileToolVersion = "v0.0.0-20250106192035-c31d5b91ecc3"
+
 func executablePath(name string) string {
 	if runtime.GOOS == "windows" {
 		name += ".exe"
@@ -1059,11 +1061,11 @@ func doAndroidArchive(cmdline []string) {
 	// Gomobile module versions memo:
 	// https://pkg.go.dev/golang.org/x/mobile?tab=versions
 	// https://cs.opensource.google/go/x/mobile;bpv=1
-	//	v0.0.0-20250106192035-c31d5b91ecc3	Jan 6, 2025 (@latest)
+	//	v0.0.0-20250106192035-c31d5b91ecc3	Jan 6, 2025
 	//	v0.0.0-20250103163954-5e5de4c85663	Jan 3, 2025
 	//	v0.0.0-20241213221354-a87c1cf6cf46	Dec 13, 2024
 	//	v0.0.0-20240930194658-c6794c95c70b	Sep 30, 2024
-	install := tc.Install(GOBIN, "golang.org/x/mobile/cmd/gomobile@latest", "golang.org/x/mobile/cmd/gobind@latest")
+	install := installMobileTools(tc)
 	install.Env = append(install.Env)
 	build.MustRun(install)
 
@@ -1162,6 +1164,18 @@ func gomobileTool(subcmd string, args ...string) *exec.Cmd {
 	return cmd
 }
 
+func installMobileTools(tc *build.GoToolchain) *exec.Cmd {
+	args := []string{}
+	if runtime.GOOS == "darwin" {
+		args = append(args, "-ldflags=-linkmode=external")
+	}
+	args = append(args,
+		"golang.org/x/mobile/cmd/gomobile@"+mobileToolVersion,
+		"golang.org/x/mobile/cmd/gobind@"+mobileToolVersion,
+	)
+	return tc.Install(GOBIN, args...)
+}
+
 type mavenMetadata struct {
 	Version      string
 	Package      string
@@ -1237,11 +1251,11 @@ func doXCodeFramework(cmdline []string) {
 	// Gomobile module versions memo:
 	// https://pkg.go.dev/golang.org/x/mobile?tab=versions
 	// https://cs.opensource.google/go/x/mobile;bpv=1
-	//	v0.0.0-20250106192035-c31d5b91ecc3	Jan 6, 2025 (@latest)
+	//	v0.0.0-20250106192035-c31d5b91ecc3	Jan 6, 2025
 	//	v0.0.0-20250103163954-5e5de4c85663	Jan 3, 2025
 	//	v0.0.0-20241213221354-a87c1cf6cf46	Dec 13, 2024
 	//	v0.0.0-20240930194658-c6794c95c70b	Sep 30, 2024
-	build.MustRun(tc.Install(GOBIN, "golang.org/x/mobile/cmd/gomobile@latest", "golang.org/x/mobile/cmd/gobind@latest"))
+	build.MustRun(installMobileTools(tc))
 
 	// Build the iOS XCode framework
 	bind := gomobileTool("bind", "-ldflags", "-s -w", "--target", "ios", "-v", "github.com/ethereum/go-ethereum/mobile")
